@@ -1,0 +1,2 @@
+module FlickrSyncd
+end
