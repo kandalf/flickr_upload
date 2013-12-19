@@ -79,9 +79,9 @@ module FlickrSyncd
           self.access_secret = flickr.access_secret
       end
 
-      if login["id"] != @config["user_id"]
-        @config["user_id"]   = login["id"]
-        @config["user_name"] = login["username"]
+      if login["id"] != @@config["user_id"]
+        @@config["user_id"]   = login["id"]
+        @@config["user_name"] = login["username"]
       end
 
       self.flush_settings
