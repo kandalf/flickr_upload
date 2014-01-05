@@ -1,1 +1,3 @@
 flickraw -v 0.9.7
+sequel -v 4.5.0
+sqlite3 -v 1.3.8
