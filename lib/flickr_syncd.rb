@@ -1,2 +1,5 @@
-module FlickrSyncd
-end
+require_relative 'flickr_syncd/authenticator'
+require_relative 'flickr_syncd/flickr_account'
+require_relative 'flickr_syncd/photo'
+require_relative 'flickr_syncd/user'
+require_relative 'flickr_syncd/set'
