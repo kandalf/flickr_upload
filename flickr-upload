@@ -1,0 +1,51 @@
+#!/bin/env ruby
+require 'sequel'
+require 'pp'
+
+Sequel.connect("sqlite://db/flickr_syncd.db")
+
+require_relative 'lib/flickr_syncd'
+
+FlickrSyncd::Authenticator.load_settings("config/settings.json")
+base_dir = ARGV[0]
+
+
+if FlickrSyncd::Authenticator.needs_authorization?
+  puts "You need to authorize you application"
+  puts "When you hit Enter a browser will open the authorization page"
+  puts "Please authorize the application, copy the verification code for pasting it below."
+  auth_data = FlickrSyncd::Authenticator.authorize
+
+  gets
+
+  puts "Lauching browser. Please wait..."
+
+  browser = ENV['BROWSER'] || 'firefox'
+  `#{browser} #{auth_data[:auth_url]}`
+
+  puts "Please Enter the verification code:"
+  verify_code = gets.strip 
+
+  FlickrSyncd::Authenticator.authenticate(auth_data[:token_data]['oauth_token'],
+                                          auth_data[:token_data]['oauth_token_secret'],
+                                          verify_code)
+end
+
+FlickrSyncd::Authenticator.login
+
+flickr_acct = FlickrSyncd::FlickrAccount.new(FlickrSyncd::Authenticator.credentials)
+
+Dir["#{base_dir}/**"].each do |set_name|
+  dataset = FlickrSyncd::Set.where(:name => set_name).first
+  media_files = Dir["#{set_name}/*.{jpg,mp4,JPG,png,PNG,gif,GIF,mpg,mpeg,MPEG,MPG}"]
+
+  if dataset
+  else
+    flickr_set = flickr_acct.upload_to_set(media_files)
+    set = FlickrSyncd::Set.create(:name => set_name, :id => flickr_set[:set_id])
+
+    flickr_set[:uploaded_files].each do |flickr_id, file_path|
+      FlickrSyncd::Photo.create(:id => flickr_id, :title => file_path, :set_id => set.id, :user_id => FlickrSyncd::Authenticator.user_id)
+    end
+  end
+end

@@ -55,6 +55,10 @@ module FlickrSyncd
       !(@@config["access_token"] && @@config["access_secret"])
     end
 
+    def self.credentials
+      {:user_name => self.user_name, :user_id => self.user_id}
+    end
+
     def self.authorize
       token       = flickr.get_request_token
       auth_url    = flickr.get_authorize_url(token['oauth_token'], :perms => 'write')
