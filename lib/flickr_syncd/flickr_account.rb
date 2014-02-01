@@ -1,5 +1,4 @@
 require 'flickraw'
-require 'pry_debug'
 
 module FlickrSyncd
   class FlickrAccount
