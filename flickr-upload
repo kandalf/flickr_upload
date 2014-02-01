@@ -35,17 +35,32 @@ FlickrSyncd::Authenticator.login
 
 flickr_acct = FlickrSyncd::FlickrAccount.new(FlickrSyncd::Authenticator.credentials)
 
-Dir["#{base_dir}/**"].each do |set_name|
-  dataset = FlickrSyncd::Set.where(:name => set_name).first
-  media_files = Dir["#{set_name}/*.{jpg,mp4,JPG,png,PNG,gif,GIF,mpg,mpeg,MPEG,MPG}"]
+Dir["#{base_dir}/**"].sort.each do |set_name|
+  dataset = FlickrSyncd::Set.find(:name => set_name)
+  media_files = Dir["#{set_name}/*.{jpg,JPG,png,PNG,gif,GIF}"].sort
 
   if dataset
-  else
-    flickr_set = flickr_acct.upload_to_set(media_files)
-    set = FlickrSyncd::Set.create(:name => set_name, :id => flickr_set[:set_id])
+    puts "Checking #{dataset.name}..."
+    uploaded_photos = FlickrSyncd::Photo.where(:set_id => dataset.id)
+    remaining_photos = media_files - uploaded_photos.map(&:title)
 
-    flickr_set[:uploaded_files].each do |flickr_id, file_path|
-      FlickrSyncd::Photo.create(:id => flickr_id, :title => file_path, :set_id => set.id, :user_id => FlickrSyncd::Authenticator.user_id)
+    if remaining_photos.any?
+      puts "Uploading pictures to #{dataset.name}"
+      flickr_set = flickr_acct.upload_to_set(remaining_photos, dataset.id)
+
+      flickr_set[:uploaded_files].each do |flickr_id, file_path|
+        FlickrSyncd::Photo.create(:id => flickr_id, :title => file_path, :set_id => dataset.id, :user_id => FlickrSyncd::Authenticator.user_id)
+      end
+    else
+      puts "Set #{dataset.name} is uploaded completely"
+      puts ""
+    end
+  else
+    if media_files.any?
+      puts "New set: #{set_name}"
+      flickr_acct.upload_to_set(media_files)
+    else
+      puts "Empty directory #{set_name}"
     end
   end
 end
