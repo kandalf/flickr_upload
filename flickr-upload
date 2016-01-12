@@ -36,20 +36,20 @@ FlickrSyncd::Authenticator.login
 flickr_acct = FlickrSyncd::FlickrAccount.new(FlickrSyncd::Authenticator.credentials)
 
 Dir["#{base_dir}/**"].sort.each do |set_name|
-  dataset = FlickrSyncd::Set.find(:name => set_name)
+  dataset = FlickrSyncd::Set.find(:name => URI.encode(set_name))
   media_files = Dir["#{set_name}/*.{jpg,JPG,png,PNG,gif,GIF}"].sort
 
   if dataset
     puts "Checking #{dataset.name}..."
-    uploaded_photos = FlickrSyncd::Photo.where(:set_id => dataset.id)
+    uploaded_photos = FlickrSyncd::Photo.where(:set_id => dataset.flickr_id)
     remaining_photos = media_files - uploaded_photos.map(&:title)
 
     if remaining_photos.any?
       puts "Uploading pictures to #{dataset.name}"
-      flickr_set = flickr_acct.upload_to_set(remaining_photos, dataset.id)
+      flickr_set = flickr_acct.upload_to_set(remaining_photos, dataset.flickr_id)
 
       flickr_set[:uploaded_files].each do |flickr_id, file_path|
-        FlickrSyncd::Photo.create(:id => flickr_id, :title => file_path, :set_id => dataset.id, :user_id => FlickrSyncd::Authenticator.user_id)
+        FlickrSyncd::Photo.create(:id => flickr_id, :title => file_path, :set_id => dataset.flickr_id, :user_id => FlickrSyncd::Authenticator.user_id)
       end
     else
       puts "Set #{dataset.name} is uploaded completely"
